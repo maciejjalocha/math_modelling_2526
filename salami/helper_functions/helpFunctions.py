@@ -230,20 +230,20 @@ def setImagePix(rgbIm, pixId):
     
     import numpy as np
     
-    rgbOut = rgbIm
-    
-    if ( pixId.shape[0] == rgbIm.shape[0] and pixId.shape[1] == rgbIm.shape[1] ):
-        for i in range(0,rgbIm.shape[2]):
-            rgbOut[:,:,i] = np.multiply(rgbIm[:,:,i],pixId) + 255*(1-pixId)
-    
-    else:
-        rgbOut = rgbOut*0 + 255
-        for i in range(0,pixId.shape[0]):
-            rgbOut[pixId[i,0], pixId[i,1],:] = rgbIm[pixId[i,0], pixId[i,1],:]
+    rgbOut = rgbIm.copy()  # Fix: copy instead of reference
 
-    
-    rgbOut = np.uint8(rgbOut)
-    
+    if (pixId.shape[0] == rgbIm.shape[0] and pixId.shape[1] == rgbIm.shape[1]):
+        # pixId is a mask
+        for i in range(rgbIm.shape[2]):
+            rgbOut[:,:,i] = np.multiply(rgbIm[:,:,i], pixId) + 255 * (1 - pixId)
+    else:
+        # pixId is a list of indices
+        rgbOut = np.zeros_like(rgbIm) + 255
+        for i in range(pixId.shape[0]):
+            rgbOut[pixId[i,0], pixId[i,1], :] = rgbIm[pixId[i,0], pixId[i,1], :]
+
+    # rgbOut = np.uint8(rgbOut)
+
     return rgbOut
 
 
