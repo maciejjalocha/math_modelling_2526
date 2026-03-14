@@ -87,7 +87,7 @@ volume = volume[50:]  # drop first 50 frames as camera was sharpening
 
 # %%
 Vx, Vy, Vt = get_volume_gradients(
-    volume, xy_sigma=1, t_sigma=1, xy_radius=5, t_radius=2
+    volume, xy_sigma=1, t_sigma=1, xy_radius=5, t_radius=3
 )
 
 u, v = get_flow_vector_lukas_kanade(Vx, Vy, Vt, xy_radius=5, t_radius=3)

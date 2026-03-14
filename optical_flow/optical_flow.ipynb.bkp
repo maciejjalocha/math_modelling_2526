@@ -1,0 +1,661 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "45907e08",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(64, 256, 256)\n"
+     ]
+    }
+   ],
+   "source": [
+    "import matplotlib\n",
+    "import numpy as np\n",
+    "import os\n",
+    "import matplotlib.pyplot as plt\n",
+    "import matplotlib\n",
+    "\n",
+    "%matplotlib widget\n",
+    "\n",
+    "path = \"./toy_problem/\"\n",
+    "\n",
+    "\n",
+    "# load all the images inside into 3d numpy array\n",
+    "def load_images(path):\n",
+    "    images = []\n",
+    "    for filename in sorted(os.listdir(path)):\n",
+    "        if filename.endswith(\".png\"):\n",
+    "            img = plt.imread(os.path.join(path, filename))\n",
+    "            # convert to grayscale\n",
+    "            img = np.mean(img, axis=2, dtype=np.float32) / 255.0\n",
+    "            images.append(img)\n",
+    "    return np.array(images)\n",
+    "\n",
+    "\n",
+    "# Load images\n",
+    "frames = load_images(path)\n",
+    "print(frames.shape)\n",
+    "\n",
+    "# Animate the images using matplotlib and pause\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "3b7e82d7-3a2e-4a36-9afd-1ca41159f0a7",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "a10f07d1-4882-4c5b-81ac-c47e8adf8cde",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "np.random.seed(19680801)\n",
+    "data = np.random.random((50, 50, 50))\n",
+    "\n",
+    "fig, ax = plt.subplots()\n",
+    "\n",
+    "for i, img in enumerate(data):\n",
+    "    ax.clear()\n",
+    "    ax.imshow(img)\n",
+    "    ax.set_title(f\"frame {i}\")\n",
+    "    # Note that using time.sleep does *not* work here!\n",
+    "    plt.pause(0.1)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5a18e01d-e325-4a39-a185-652f315a4673",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "fig, ax = plt.subplots()\n",
+    "for i in range(frames.shape[0]):\n",
+    "    ax.clear()\n",
+    "    ax.imshow(frames[i], cmap=\"gray\")\n",
+    "    ax.set_title(f\"Frame {i + 1}\")\n",
+    "    plt.axis(\"off\")\n",
+    "    plt.pause(0.1)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c7c66695",
+   "metadata": {},
+   "source": [
+    "#### Problem 2.1 - Low level gradient calculation: The most simple way is to approximate the gradient\n",
+    "as the difference between neighboring pixels/voxels.\n",
+    "In a 1D signal, x, this would be:\n",
+    "MATLAB: dx = x(2:end) - x(1:end-1)\n",
+    "PYTHON: dx = x[1:] - x[0:-1]\n",
+    "Obtain Vx,Vy,Vt for the entire volume and display for some selected frames.\n",
+    "Consider what happens with the image/volume size, when performing gradient calculations like this?"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d3083a4a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "frames.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "484995d4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "V = frames[1:, 1:, 1:] - frames[:-1, :-1, :-1]\n",
+    "\n",
+    "# frame = V[50, :, :]\n",
+    "Vx_raw = frames[:, :, 1:] - frames[:, :, :-1]\n",
+    "Vy_raw = frames[:, 1:, :] - frames[:, :-1, :]\n",
+    "Vt_raw = frames[1:, :, :] - frames[:-1, :, :]\n",
+    "\n",
+    "plt.figure()\n",
+    "plt.imshow(Vx_raw[50], cmap=\"gray\")\n",
+    "plt.title(\"Optical Flow (Frame 1)\")\n",
+    "plt.axis(\"off\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f5bccbfc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "frames[50].min()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "af95f08b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "frame.min()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "3531c1df",
+   "metadata": {},
+   "source": [
+    "When performing such a gradient the dimensions dimnishes, definitely.\n",
+    "* Image size - decreases\n",
+    "* Volume size - well, you substract stuff, so that also gets smaller.\n",
+    "    * You actually end up with a range [-1,1] or [`-frame.max()`, `frame.max()`]"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "7712b4e7",
+   "metadata": {},
+   "source": [
+    "#### Problem 2.2"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "84aca02b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import scipy\n",
+    "\n",
+    "fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(15, 5))\n",
+    "ax[0].imshow(\n",
+    "    scipy.ndimage.sobel(frames[50], mode=\"constant\", cval=0.0, axis=0),\n",
+    "    cmap=\"gray\",\n",
+    ")\n",
+    "ax[0].set_title(\"Sobel Filter (Axis 0)\")\n",
+    "\n",
+    "ax[1].imshow(\n",
+    "    scipy.ndimage.sobel(frames[50], mode=\"constant\", cval=0.0, axis=1),\n",
+    "    cmap=\"gray\",\n",
+    ")\n",
+    "ax[1].set_title(\"Sobel Filter (Axis 1)\")\n",
+    "\n",
+    "ax[2].imshow(\n",
+    "    scipy.ndimage.sobel(frames, mode=\"constant\", cval=0.0, axis=0)[50],\n",
+    "    cmap=\"gray\",\n",
+    ")\n",
+    "ax[2].set_title(\"Sobel Filter around time\")\n",
+    "\n",
+    "ax[3].imshow(frames[50], cmap=\"gray\")\n",
+    "ax[3].set_title(\"Original Frame\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f07feb1b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.imshow(frames[])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c38ae282",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "plt.imshow(frames[49] - frames[51], cmap=\"gray\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "50ca1936",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# flipped sobel\n",
+    "plt.imshow(\n",
+    "    -scipy.ndimage.sobel(frames[50], mode=\"constant\", cval=0.0, axis=0),\n",
+    "    cmap=\"gray\",\n",
+    ")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c64c673f",
+   "metadata": {},
+   "source": [
+    "Conclusions:\n",
+    "* axis=0, means horizontal kernel (alongside rows)\n",
+    "* axis=1 means vertical kernel (alongside columns)\n",
+    "* batching does not work (cannot do this with 3 at the same time haha, at least when the time is first)\n",
+    "* Flipping - for kernels like sobel and prewit, it's simply about taking a negative.\n",
+    "* To actually understand the underlying implementation - I would need to spend some time on the underlying logic."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "68136cd4",
+   "metadata": {},
+   "source": [
+    "### Problem 2.3"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "6b53d7db",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# gaussian filter as derivative\n",
+    "\n",
+    "fig, ax = plt.subplots(nrows=1, ncols=4, figsize=(15, 5))\n",
+    "ax[0].imshow(\n",
+    "    scipy.ndimage.gaussian_filter(\n",
+    "        frames, sigma=1, order=[0, 0, 1], mode=\"constant\", cval=0.0\n",
+    "    )[50],\n",
+    "    cmap=\"gray\",\n",
+    ")\n",
+    "ax[0].set_title(\"Gaussian Filter Vx (Axis 2)\")\n",
+    "\n",
+    "ax[1].imshow(\n",
+    "    scipy.ndimage.gaussian_filter(\n",
+    "        frames, sigma=1, order=[0, 1, 0], mode=\"constant\", cval=0.0\n",
+    "    )[50],\n",
+    "    cmap=\"gray\",\n",
+    ")\n",
+    "ax[1].set_title(\"Gaussian Filter Vy (Axis 1)\")\n",
+    "\n",
+    "ax[2].imshow(\n",
+    "    scipy.ndimage.gaussian_filter(\n",
+    "        frames, sigma=1, order=[1, 0, 0], mode=\"constant\", cval=0.0\n",
+    "    )[50],\n",
+    "    cmap=\"gray\",\n",
+    ")\n",
+    "ax[2].set_title(\"Gaussian Filter Vt (Axis 0 / time)\")\n",
+    "\n",
+    "ax[3].imshow(frames[50], cmap=\"gray\")\n",
+    "ax[3].set_title(\"Original Frame\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "b098f94b",
+   "metadata": {},
+   "source": [
+    "### 3.1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "38e0864a",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Vx = scipy.ndimage.gaussian_filter(frames, sigma=1, order=[0, 0, 1])\n",
+    "Vy = scipy.ndimage.gaussian_filter(frames, sigma=1, order=[0, 1, 0])\n",
+    "Vt = scipy.ndimage.gaussian_filter(frames, sigma=1, order=[1, 0, 0])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "b0105f1f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Simple:\n",
+    "\n",
+    "t = 30\n",
+    "x, y = (100, 150)\n",
+    "\n",
+    "N = 5\n",
+    "\n",
+    "\n",
+    "def get_region_around(x, y, N, arr):\n",
+    "    \"\"\"Region centered around (x, y) with size NxN\"\"\"\n",
+    "    return arr[y - N : y + N + 1, x - N : x + N + 1]\n",
+    "\n",
+    "\n",
+    "Vx_region = get_region_around(x, y, N, Vx[t])\n",
+    "Vy_region = get_region_around(x, y, N, Vy[t])\n",
+    "Vt_region = get_region_around(x, y, N, Vt[t])\n",
+    "\n",
+    "A = np.hstack((Vx_region.reshape(-1, 1), Vy_region.reshape(-1, 1)))\n",
+    "b = -Vt_region.reshape(-1, 1)\n",
+    "# Solve for the flow vector (u, v) using least squares\n",
+    "flow_vector, _, _, _ = np.linalg.lstsq(A, b)\n",
+    "# print(\"Estimated flow vector (u, v):\", flow_vector"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c95340a6",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Plot the displacement vector on the original frame\n",
+    "plt.figure()\n",
+    "plt.imshow(frames[t], cmap=\"gray\")\n",
+    "scaled_flow_vector = flow_vector.flatten() * 10  # Scale for better visualization\n",
+    "plt.quiver(\n",
+    "    x,\n",
+    "    y,\n",
+    "    scaled_flow_vector[0],\n",
+    "    scaled_flow_vector[1],\n",
+    "    color=\"red\",\n",
+    "    angles=\"xy\",\n",
+    "    scale_units=\"xy\",\n",
+    "    scale=1,\n",
+    ")\n",
+    "plt.title(\"Estimated Flow Vector\")\n",
+    "plt.axis(\"off\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "642ef3b9",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "markdown",
+   "id": "436e5a5b",
+   "metadata": {},
+   "source": [
+    "### To discuss\n",
+    "Edge strategy\n",
+    "I would apply this normalisation strategy - utilise only the data that is available (as the guy said in the video).\n",
+    "However, for now - let me go fast, and talk with William afterwards on how to do it."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "41a96fcc",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "A.shape"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a18bd91c",
+   "metadata": {},
+   "source": [
+    "### 3.2\n",
+    "APply to full volume"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "f7ee5a98",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# test 3d array\n",
+    "from pylab import dtype\n",
+    "\n",
+    "arr = np.random.rand(3, 3, 3)\n",
+    "arr"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "d27efbe2",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# go over all pixels in the frame, with a stride of 5, and compute the flow vector for each selected pixel and plot\n",
+    "t = 16\n",
+    "N = 11\n",
+    "stride = 20\n",
+    "plt.figure(figsize=(10, 10))\n",
+    "plt.imshow(frames[t], cmap=\"gray\")\n",
+    "for y in range(N, frames[t].shape[0] - N, stride):\n",
+    "    for x in range(N, frames[t].shape[1] - N, stride):\n",
+    "        Vx_region = get_region_around(x, y, N, Vx[t])\n",
+    "        Vy_region = get_region_around(x, y, N, Vy[t])\n",
+    "        Vt_region = get_region_around(x, y, N, Vt[t])\n",
+    "\n",
+    "        A = np.hstack((Vx_region.reshape(-1, 1), Vy_region.reshape(-1, 1)))\n",
+    "        b = -Vt_region.reshape(-1, 1)\n",
+    "        flow_vector, _, _, _ = np.linalg.lstsq(A, b)\n",
+    "        scaled_flow_vector = flow_vector.flatten() * 10\n",
+    "        plt.quiver(\n",
+    "            x,\n",
+    "            y,\n",
+    "            scaled_flow_vector[0],\n",
+    "            scaled_flow_vector[1],\n",
+    "            color=\"red\",\n",
+    "            angles=\"xy\",\n",
+    "            scale_units=\"xy\",\n",
+    "            scale=1,\n",
+    "        )\n",
+    "plt.title(\"Estimated Flow Vectors\")\n",
+    "plt.axis(\"off\")\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "eab7e6d4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# repeat for all frames (output all 64 images with flow vectors)\n",
+    "\n",
+    "for t in range(frames.shape[0]):\n",
+    "    N = 3\n",
+    "    stride = 20\n",
+    "    plt.figure(figsize=(10, 10))\n",
+    "    plt.imshow(frames[t], cmap=\"gray\")\n",
+    "    for y in range(N, frames[t].shape[0] - N, stride):\n",
+    "        for x in range(N, frames[t].shape[1] - N, stride):\n",
+    "            Vx_region = get_region_around(x, y, N, Vx[t])\n",
+    "            Vy_region = get_region_around(x, y, N, Vy[t])\n",
+    "            Vt_region = get_region_around(x, y, N, Vt[t])\n",
+    "\n",
+    "            A = np.hstack((Vx_region.reshape(-1, 1), Vy_region.reshape(-1, 1)))\n",
+    "            b = -Vt_region.reshape(-1, 1)\n",
+    "            flow_vector, _, _, _ = np.linalg.lstsq(A, b)\n",
+    "            scaled_flow_vector = flow_vector.flatten() * 10\n",
+    "            plt.quiver(\n",
+    "                x,\n",
+    "                y,\n",
+    "                scaled_flow_vector[0],\n",
+    "                scaled_flow_vector[1],\n",
+    "                color=\"red\",\n",
+    "                angles=\"xy\",\n",
+    "                scale_units=\"xy\",\n",
+    "                scale=1,\n",
+    "            )\n",
+    "    plt.title(f\"Estimated Flow Vectors (Frame {t + 1})\")\n",
+    "    plt.axis(\"off\")\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "8fa0649f",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# repeat for all frames (output all 64 images with flow vectors)\n",
+    "\n",
+    "for t in range(frames.shape[0]):\n",
+    "    N = 21\n",
+    "    stride = 20\n",
+    "    plt.figure(figsize=(10, 10))\n",
+    "    plt.imshow(frames[t], cmap=\"gray\")\n",
+    "    for y in range(N, frames[t].shape[0] - N, stride):\n",
+    "        for x in range(N, frames[t].shape[1] - N, stride):\n",
+    "            Vx_region = get_region_around(x, y, N, Vx[t])\n",
+    "            Vy_region = get_region_around(x, y, N, Vy[t])\n",
+    "            Vt_region = get_region_around(x, y, N, Vt[t])\n",
+    "\n",
+    "            A = np.hstack((Vx_region.reshape(-1, 1), Vy_region.reshape(-1, 1)))\n",
+    "            b = -Vt_region.reshape(-1, 1)\n",
+    "            flow_vector, _, _, _ = np.linalg.lstsq(A, b)\n",
+    "            scaled_flow_vector = flow_vector.flatten()\n",
+    "            if (\n",
+    "                np.linalg.norm(scaled_flow_vector) < 1\n",
+    "            ):  # Only plot significant flow vectors\n",
+    "                continue\n",
+    "            plt.quiver(\n",
+    "                x,\n",
+    "                y,\n",
+    "                scaled_flow_vector[0],\n",
+    "                scaled_flow_vector[1],\n",
+    "                color=\"red\",\n",
+    "                angles=\"xy\",\n",
+    "                scale_units=\"xy\",\n",
+    "                scale=1,\n",
+    "            )\n",
+    "    plt.title(f\"Estimated Flow Vectors (Frame {t + 1})\")\n",
+    "    plt.axis(\"off\")\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "7bf005db",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# super fast lucas-kanade\n",
+    "\n",
+    "Vx2 = Vx * Vx\n",
+    "Vy2 = Vy * Vy\n",
+    "VxVy = Vx * Vy\n",
+    "VxVt = Vx * Vt\n",
+    "VyVt = Vy * Vt\n",
+    "s = 2\n",
+    "Sxx = scipy.ndimage.gaussian_filter(Vx2, sigma=s)\n",
+    "Syy = scipy.ndimage.gaussian_filter(Vy2, sigma=s)\n",
+    "Sxy = scipy.ndimage.gaussian_filter(VxVy, sigma=s)\n",
+    "Sxt = scipy.ndimage.gaussian_filter(VxVt, sigma=s)\n",
+    "Syt = scipy.ndimage.gaussian_filter(VyVt, sigma=s)\n",
+    "\n",
+    "det = Sxx * Syy - Sxy * Sxy\n",
+    "u = -(Sxt * Syy - Syt * Sxy) / det\n",
+    "v = -(Sxx * Syt - Sxy * Sxt) / det\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "00b27b7e",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# again, go through all frames and plot the flow vectors, with stride of 20\n",
+    "\n",
+    "for t in range(frames.shape[0]):\n",
+    "    N = 21\n",
+    "    stride = 20\n",
+    "    plt.figure(figsize=(10, 10))\n",
+    "    plt.imshow(frames[t], cmap=\"gray\")\n",
+    "    for y in range(N, frames[t].shape[0] - N, stride):\n",
+    "        for x in range(N, frames[t].shape[1] - N, stride):\n",
+    "            flow_vector = np.array([u[t, y, x], v[t, y, x]]) * 10\n",
+    "            if np.linalg.norm(flow_vector) < 1:  # Only plot significant flow vectors\n",
+    "                continue\n",
+    "            plt.quiver(\n",
+    "                x,\n",
+    "                y,\n",
+    "                flow_vector[0],\n",
+    "                flow_vector[1],\n",
+    "                color=\"red\",\n",
+    "                angles=\"xy\",\n",
+    "                scale_units=\"xy\",\n",
+    "                scale=1,\n",
+    "            )\n",
+    "    plt.title(f\"Estimated Flow Vectors (Frame {t + 1})\")\n",
+    "    plt.axis(\"off\")\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "c44880f4",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from PIL.Image import new\n",
+    "import av\n",
+    "\n",
+    "container = av.open(\"./videos/apenture.mp4\")\n",
+    "downscaled_shape = (640, 360)\n",
+    "i = 0\n",
+    "for frame in container.decode(video=0):\n",
+    "    img = frame.to_image()  # PIL/Pillow image\n",
+    "    # arr = np.asarray(img)  # numpy array\n",
+    "    # aspect ratio is 16:9, so downscale to 160x90\n",
+    "    # downscale everything to 640x360\n",
+    "    # downscale everything to\n",
+    "    new_img = img.resize(downscaled_shape)\n",
+    "    arr = np.asarray(new_img)\n",
+    "    print(i)\n",
+    "    i += 1\n",
+    "\n",
+    "    # Do something!"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "math-modelling-2526 (3.11.14)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.11.14"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
