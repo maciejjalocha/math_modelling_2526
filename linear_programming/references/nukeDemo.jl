@@ -1,18 +1,4 @@
-using GLPK, Cbc, JuMP, SparseArrays
-
-H = [
-10
-30
-70
-50
-70
-120
-140
-120
-100
-80
-]
-
+using Cbc, JuMP, SparseArrays, DelimitedFiles
 
 K = [
 300 140 40
@@ -21,28 +7,27 @@ K = [
 
 function constructA(H,K)
     # Make a function that returns A when given H and K
+    h = length(H)
+    A = spzeros(h,h)
+    for i in 1:h
+        A[i,i] = K[1]
+    end
+    for i in 1:h-1
+        A[i,i+1] = K[2]
+        A[i+1,i] = K[2]
+    end
+    for i in 1:h-2
+        A[i,i+2] = K[3]
+        A[i+2,i] = K[3]
+    end
     return A
 end
-
-# A should be structured as follows
-A = [300.0  140.0   40.0    0.0    0.0    0.0    0.0    0.0    0.0    0.0
-     140.0  300.0  140.0   40.0    0.0    0.0    0.0    0.0    0.0    0.0
-      40.0  140.0  300.0  140.0   40.0    0.0    0.0    0.0    0.0    0.0
-       0.0   40.0  140.0  300.0  140.0   40.0    0.0    0.0    0.0    0.0
-       0.0    0.0   40.0  140.0  300.0  140.0   40.0    0.0    0.0    0.0
-       0.0    0.0    0.0   40.0  140.0  300.0  140.0   40.0    0.0    0.0
-       0.0    0.0    0.0    0.0   40.0  140.0  300.0  140.0   40.0    0.0
-       0.0    0.0    0.0    0.0    0.0   40.0  140.0  300.0  140.0   40.0
-       0.0    0.0    0.0    0.0    0.0    0.0   40.0  140.0  300.0  140.0
-       0.0    0.0    0.0    0.0    0.0    0.0    0.0   40.0  140.0  300.0
-]
-
 
 function solveIP(H, K)
     h = length(H)
     myModel = Model(Cbc.Optimizer)
     # If your want ot use GLPK instead use:
-    #myModel = Model(GLPK.Optimizer)
+    # myModel = Model(GLPK.Optimizer)
 
     A = constructA(H,K)
 
@@ -58,11 +43,28 @@ function solveIP(H, K)
 
     if termination_status(myModel) == MOI.OPTIMAL
         println("Objective value: ", JuMP.objective_value(myModel))
-        println("x = ", JuMP.value.(x))
-        println("R = ", JuMP.value.(R))
+        x_val = JuMP.value.(x)
+        R_val = JuMP.value.(R)
+        println("x = ", x_val)
+        println("R = ", R_val)
+
+        # Save H, x, R to a TSV file for Python
+        # using DelimitedFiles
+        return x_val, R_val
     else
         println("Optimize was not succesful. Return code: ", termination_status(myModel))
     end
 end
 
-solveIP(H,K)
+# Read the interpolated heights from the file
+data = readdlm("./linear_programming/data/interpolated_heights.txt", '\t', skipstart=1)
+H = data[:, 2]  # Second column is the interpolated heights
+
+x_val, R_val = solveIP(H,K)
+distance = data[:, 1]
+output = [distance x_val R_val]
+header = "distance\tx\tR"
+open("./linear_programming/data/solution_results.txt", "w") do io
+    write(io, "distance\tx\tR\n")
+    writedlm(io, output, '\t')
+end
