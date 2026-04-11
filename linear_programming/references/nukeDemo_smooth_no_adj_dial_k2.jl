@@ -29,9 +29,9 @@ end
 
 function solveIP(H)
     h = length(H)
-    # myModel = Model(Cbc.Optimizer)
+    myModel = Model(Cbc.Optimizer)
     # If your want ot use GLPK instead use:
-    myModel = Model(GLPK.Optimizer)
+    # myModel = Model(GLPK.Optimizer)
 
     A1 = constructA(H,K1)
     A2 = constructA(H,K2)

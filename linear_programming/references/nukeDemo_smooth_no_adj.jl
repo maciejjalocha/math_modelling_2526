@@ -1,4 +1,4 @@
-using Cbc, JuMP, SparseArrays, DelimitedFiles
+using Cbc, JuMP, SparseArrays, DelimitedFiles, GLPK
 
 K = [
 300 140 40
