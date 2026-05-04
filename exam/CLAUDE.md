@@ -1,0 +1,1 @@
+This folder contains my notebook and material regarding Mathematical Modeling Exam.
